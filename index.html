@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Prototipo de primera visita de genética oncológica familiar" />
+    <title>Pedigree · Primera visita</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="#inicio" aria-label="Inicio">PEDIGREE<span>β</span></a>
+        <div class="privacy-note"><span class="dot"></span> Prototipo local · no se almacenan datos</div>
+      </header>
+
+      <section class="hero" id="inicio">
+        <p class="eyebrow">PRIMERA VISITA · GENÉTICA ONCOLÓGICA</p>
+        <h1>La historia familiar,<br /><em>bien recogida.</em></h1>
+        <p>Introduce solo lo que conoces. Los campos clínicos avanzados aparecen cuando son relevantes.</p>
+      </section>
+
+      <nav class="progress" aria-label="Progreso del formulario">
+        <button class="step active" data-step="1"><b>01</b><span>Expediente</span></button>
+        <button class="step" data-step="2"><b>02</b><span>Familia</span></button>
+        <button class="step" data-step="3"><b>03</b><span>Hallazgos</span></button>
+        <button class="step" data-step="4"><b>04</b><span>Revisión</span></button>
+      </nav>
+
+      <form id="intake-form" novalidate>
+        <section class="panel active" data-panel="1">
+          <div class="panel-heading"><span class="section-number">01</span><div><h2>Expediente y persona consultante</h2><p>Empezamos por los datos mínimos para contextualizar la familia.</p></div></div>
+          <div class="form-grid">
+            <label class="field"><span>Código de familia <i>obligatorio</i></span><input id="family-code" name="familyCode" placeholder="Ej. FAM-2026-001" required maxlength="40" /></label>
+            <label class="field"><span>Fecha de la visita</span><input id="visit-date" name="visitDate" type="date" /></label>
+            <label class="field wide"><span>Alias de la persona consultante</span><input id="proband-alias" name="probandAlias" placeholder="Ej. Ana, paciente, caso consultante" maxlength="120" /><small>No incluyas nombre completo en esta versión de prueba.</small></label>
+            <fieldset class="field wide choice-field"><legend>Motivo principal de consulta</legend><div class="choice-row"><label><input type="radio" name="reason" value="historia_familiar" checked /> Historia familiar de cáncer</label><label><input type="radio" name="reason" value="variante_familiar" /> Variante familiar conocida</label><label><input type="radio" name="reason" value="tumor_personal" /> Tumor personal</label><label><input type="radio" name="reason" value="otro" /> Otro</label></div></fieldset>
+            <label class="field wide"><span>Notas iniciales <i>opcional</i></span><textarea id="family-notes" rows="3" placeholder="Solo información necesaria para interpretar el formulario."></textarea></label>
+          </div>
+        </section>
+
+        <section class="panel" data-panel="2">
+          <div class="panel-heading"><span class="section-number">02</span><div><h2>Miembros de la familia</h2><p>Añade a las personas relevantes. Podrás introducir tumores y estudios en el siguiente paso.</p></div></div>
+          <div class="hint"><strong>Consejo:</strong> para una primera prueba bastan los familiares afectados y sus familiares de primer grado.</div>
+          <div id="relatives-list" class="repeat-list"></div>
+          <button class="add-button" type="button" id="add-relative"><span>+</span> Añadir familiar</button>
+        </section>
+
+        <section class="panel" data-panel="3">
+          <div class="panel-heading"><span class="section-number">03</span><div><h2>Hallazgos clínicos</h2><p>Relaciona cada tumor o estudio con el familiar correspondiente.</p></div></div>
+          <div class="tabbar" role="tablist"><button type="button" class="tab active" data-tab="tumors">Tumores</button><button type="button" class="tab" data-tab="genetics">Genética previa</button><button type="button" class="tab" data-tab="exposures">Exposiciones</button></div>
+          <div class="tab-panel active" data-tab-panel="tumors"><p class="empty-state" id="tumor-empty">Añade al menos un familiar antes de registrar un tumor.</p><div id="tumors-list" class="repeat-list"></div><button class="add-button" type="button" id="add-tumor"><span>+</span> Añadir tumor</button></div>
+          <div class="tab-panel" data-tab-panel="genetics"><p class="empty-state" id="genetic-empty">Añade un familiar antes de registrar un estudio.</p><div id="genetics-list" class="repeat-list"></div><button class="add-button" type="button" id="add-genetic"><span>+</span> Añadir estudio genético</button></div>
+          <div class="tab-panel" data-tab-panel="exposures"><p class="empty-state" id="exposure-empty">Añade un familiar antes de registrar una exposición.</p><div id="exposures-list" class="repeat-list"></div><button class="add-button" type="button" id="add-exposure"><span>+</span> Añadir exposición</button></div>
+        </section>
+
+        <section class="panel" data-panel="4">
+          <div class="panel-heading"><span class="section-number">04</span><div><h2>Revisa y exporta</h2><p>El formulario no envía información: generará un archivo JSON en tu dispositivo.</p></div></div>
+          <div id="summary" class="summary"></div>
+          <details class="json-preview"><summary>Ver vista previa del JSON</summary><pre id="json-output"></pre></details>
+          <div class="warning"><strong>Antes de compartir:</strong> elimina o anonimiza cualquier identificador personal. Este prototipo no sustituye una historia clínica.</div>
+        </section>
+
+        <footer class="form-footer">
+          <button class="button secondary" type="button" id="previous" disabled>Anterior</button>
+          <div class="save-status" id="save-status" aria-live="polite"></div>
+          <button class="button primary" type="button" id="next">Continuar <span>→</span></button>
+        </footer>
+      </form>
+    </main>
+    <template id="relative-template">
+      <article class="entry relative-entry">
+        <div class="entry-heading"><div><span class="entry-tag">FAMILIAR</span><h3>Nuevo familiar</h3></div><button class="icon-button remove" type="button" aria-label="Eliminar familiar">×</button></div>
+        <div class="form-grid compact">
+          <label class="field"><span>Alias / referencia <i>obligatorio</i></span><input data-field="alias" placeholder="Ej. Tía materna" required /></label>
+          <label class="field"><span>Parentesco con consultante <i>obligatorio</i></span><select data-field="relationship" required><option value="">Selecciona…</option><option value="madre">Madre</option><option value="padre">Padre</option><option value="hermana">Hermana</option><option value="hermano">Hermano</option><option value="hija">Hija</option><option value="hijo">Hijo</option><option value="abuela_materna">Abuela materna</option><option value="abuelo_materno">Abuelo materno</option><option value="abuela_paterna">Abuela paterna</option><option value="abuelo_paterno">Abuelo paterno</option><option value="tia_tio">Tía / tío</option><option value="prima_primo">Prima / primo</option><option value="otro">Otro</option></select></label>
+          <label class="field"><span>Sexo asignado al nacer</span><select data-field="sex"><option value="desconocido">Desconocido</option><option value="femenino">Femenino</option><option value="masculino">Masculino</option><option value="intersexual">Intersexual</option></select></label>
+          <label class="field"><span>Estado vital</span><select data-field="vitalStatus"><option value="desconocido">Desconocido</option><option value="vivo">Vivo</option><option value="fallecido">Fallecido</option></select></label>
+          <label class="field"><span>Año de nacimiento <i>opcional</i></span><input data-field="birthYear" type="number" min="1850" max="2026" placeholder="Ej. 1954" /></label>
+          <label class="field death-field"><span>Año de defunción <i>opcional</i></span><input data-field="deathYear" type="number" min="1850" max="2026" placeholder="Ej. 2015" /></label>
+        </div>
+      </article>
+    </template>
+    <template id="tumor-template">
+      <article class="entry tumor-entry">
+        <div class="entry-heading"><div><span class="entry-tag rust">TUMOR</span><h3>Nuevo tumor primario</h3></div><button class="icon-button remove" type="button" aria-label="Eliminar tumor">×</button></div>
+        <div class="form-grid compact"><label class="field wide"><span>Familiar <i>obligatorio</i></span><select data-field="memberId" data-members required></select></label><label class="field"><span>Localización primaria <i>obligatorio</i></span><select data-field="site" required><option value="">Selecciona…</option><option>Mama</option><option>Colon / recto</option><option>Ovario / trompa</option><option>Endometrio</option><option>Próstata</option><option>Páncreas</option><option>Estómago</option><option>Pulmón</option><option>Riñón</option><option>Melanoma</option><option>Tiroides</option><option>Hematológico</option><option>Otro</option></select></label><label class="field"><span>Edad al diagnóstico</span><input data-field="ageAtDiagnosis" type="number" min="0" max="125" placeholder="Años" /></label><label class="field"><span>Lateralidad</span><select data-field="laterality"><option value="desconocida">Desconocida</option><option value="no_aplica">No aplica</option><option value="derecha">Derecha</option><option value="izquierda">Izquierda</option><option value="bilateral">Bilateral</option></select></label><label class="field"><span>Verificación</span><select data-field="verification"><option value="relato_familiar">Relato familiar</option><option value="informe_clinico">Informe clínico</option><option value="anatomia_patologica">Anatomía patológica</option><option value="certificado_defuncion">Certificado de defunción</option></select></label></div>
+      </article>
+    </template>
+    <template id="genetic-template">
+      <article class="entry genetic-entry">
+        <div class="entry-heading"><div><span class="entry-tag violet">GENÉTICA</span><h3>Estudio genético</h3></div><button class="icon-button remove" type="button" aria-label="Eliminar estudio">×</button></div>
+        <div class="form-grid compact"><label class="field wide"><span>Familiar <i>obligatorio</i></span><select data-field="memberId" data-members required></select></label><label class="field"><span>Finalidad</span><select data-field="purpose"><option value="caso_indice">Caso índice</option><option value="cascada">Estudio en cascada</option><option value="diagnostico">Diagnóstico</option><option value="incidental">Hallazgo incidental</option></select></label><label class="field"><span>Resultado global</span><select data-field="result"><option value="positivo">Positivo</option><option value="vus">VUS</option><option value="negativo_informativo">Negativo informativo</option><option value="negativo_no_informativo">Negativo no informativo</option><option value="no_concluyente">No concluyente</option></select></label><label class="field"><span>Gen (HGNC) <i>opcional</i></span><input data-field="gene" placeholder="Ej. BRCA1" maxlength="30" /></label><label class="field"><span>Variante HGVS cDNA <i>opcional</i></span><input data-field="hgvsC" placeholder="Ej. c.5266dupC" maxlength="200" /></label><label class="field wide"><span>Clasificación ACMG</span><select data-field="classification"><option value="clase_5_patogenica">Clase 5 · Patogénica</option><option value="clase_4_probablemente_patogenica">Clase 4 · Probablemente patogénica</option><option value="clase_3_vus">Clase 3 · VUS</option><option value="clase_2_probablemente_benigna">Clase 2 · Probablemente benigna</option><option value="clase_1_benigna">Clase 1 · Benigna</option></select></label></div>
+      </article>
+    </template>
+    <template id="exposure-template">
+      <article class="entry exposure-entry"><div class="entry-heading"><div><span class="entry-tag green">EXPOSICIÓN</span><h3>Nueva exposición</h3></div><button class="icon-button remove" type="button" aria-label="Eliminar exposición">×</button></div><div class="form-grid compact"><label class="field wide"><span>Familiar <i>obligatorio</i></span><select data-field="memberId" data-members required></select></label><label class="field"><span>Agente <i>obligatorio</i></span><select data-field="agent" required><option value="">Selecciona…</option><option>Tabaco</option><option>Alcohol</option><option>Amianto / asbesto</option><option>Radón</option><option>Benceno / disolventes</option><option>Radioterapia terapéutica</option><option>Otra</option></select></label><label class="field"><span>Contexto</span><select data-field="context"><option value="estilo_vida">Estilo de vida</option><option value="laboral">Laboral</option><option value="ambiental">Ambiental</option><option value="medico">Médico</option></select></label><label class="field"><span>Duración (años) <i>opcional</i></span><input data-field="durationYears" type="number" min="0" max="100" step="0.5" /></label><label class="field"><span>Detalle <i>opcional</i></span><input data-field="notes" placeholder="Ej. 25 paquetes-año" /></label></div></article>
+    </template>
+    <script src="app.js"></script>
+  </body>
+</html>
