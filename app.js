@@ -35,12 +35,9 @@ function refreshMemberOptions() {
   const list = members();
   $$('[data-members]').forEach(select => {
     const saved = select.value;
-    select.innerHTML = '<option value="">Selecciona un familiar…</option>' + list.map(m => `<option value="${m.id}">${m.alias || 'Familiar sin alias'}${m.relationship ? ` · ${m.relationship.replaceAll('_', ' ')}` : ''}</option>`).join('');
+    select.innerHTML = '<option value="">Sin familiar asociado</option>' + list.map(m => `<option value="${m.id}">${m.alias || 'Familiar sin alias'}${m.relationship ? ` · ${m.relationship.replaceAll('_', ' ')}` : ''}</option>`).join('');
     select.value = saved;
   });
-  const none = !list.length;
-  ['tumor-empty', 'genetic-empty', 'exposure-empty'].forEach(id => $(`#${id}`).hidden = !none);
-  ['add-tumor', 'add-genetic', 'add-exposure'].forEach(id => $(`#${id}`).disabled = none);
 }
 
 $('#add-relative').addEventListener('click', () => addEntry('relative-template', 'relatives-list', 'relative'));
@@ -87,10 +84,6 @@ function updateReview() {
 }
 
 function validateStep(step) {
-  const panel = $(`[data-panel="${step}"]`);
-  const required = $$('[required]', panel);
-  const invalid = required.find(input => !input.value.trim());
-  if (invalid) { invalid.focus(); $('#save-status').textContent = 'Completa los campos obligatorios para continuar.'; return false; }
   $('#save-status').textContent = '';
   return true;
 }
@@ -118,5 +111,4 @@ $('#next').addEventListener('click', () => {
 $('#previous').addEventListener('click', () => showStep(Math.max(1, currentStep - 1)));
 $$('.step').forEach(button => button.addEventListener('click', () => { const target = Number(button.dataset.step); if (target <= currentStep || validateStep(currentStep)) showStep(target); }));
 
-addEntry('relative-template', 'relatives-list', 'relative');
 refreshMemberOptions();
