@@ -48,7 +48,7 @@ function fillCatalog(root) {
 }
 
 function bindMemberFields() {
-  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; if (['fatherId', 'motherId'].includes(field.dataset.memberField)) setManualParent(member, field.dataset.memberField); if (['relationship', 'fatherId', 'motherId'].includes(field.dataset.memberField)) { synchronizeFamilyLinks(state.members); refreshParentFields(); } refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); }));
+  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; if (['fatherId', 'motherId'].includes(field.dataset.memberField)) setManualParent(member, field.dataset.memberField); if (['relationship', 'fatherId', 'motherId'].includes(field.dataset.memberField)) { synchronizeFamilyLinks(state.members); refreshParentFields(); } refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); if (['birthYear', 'deathYear', 'vitalStatus'].includes(field.dataset.memberField)) $$('.tumor-entry').forEach(validateTumorDates); }));
   $('#family-code').addEventListener('input', () => { state.familyCode = $('#family-code').value; $('#patient-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); });
   $('#visit-date').addEventListener('change', () => { state.visitDate = $('#visit-date').value; });
   $('#consent').addEventListener('change', () => { state.consent = $('#consent').value; });
@@ -136,13 +136,18 @@ function addRepeat(type, data = {}) {
 }
 
 function validateTumorDates(entry) {
-  const member = activeMember(); const field = $('[data-field="diagnosisDate"]', entry); if (!member || !field || !field.value) return;
-  const min = member.birthYear ? `${member.birthYear}-01-01` : '1900-01-01'; const max = member.deathYear ? `${member.deathYear}-12-31` : today();
-  field.min = min; field.max = max;
-  const warning = $('.tumor-warning', entry); if (field.value < min || field.value > max) { warning.hidden = false; warning.textContent = `La fecha debe estar entre ${min.slice(0, 4)} y ${max.slice(0, 4)} y ser compatible con la vida del familiar.`; } else if (!warning.textContent.startsWith('La localización')) warning.hidden = true;
+  const member = activeMember(); if (!member) return;
+  const date = $('[data-field="diagnosisDate"]', entry);
+  const age = $('[data-field="ageAtDiagnosis"]', entry);
+  const limits = diagnosisLimits(member, today());
+  date.min = limits.min; date.max = limits.max; age.max = Math.max(0, limits.maxAge);
+  const error = diagnosisError(member, repeatData(entry, 'tumor'), today());
+  date.setCustomValidity(error); age.setCustomValidity(error);
+  const warning = $('.tumor-warning', entry);
+  warning.hidden = !error; warning.textContent = error;
 }
 function showAnatomyWarning(entry) {
-  const member = activeMember(); const site = fieldValue(entry, 'siteSearch').toLowerCase(); const warning = $('.tumor-warning', entry); if (!member || !site) return;
+  const member = activeMember(); const site = fieldValue(entry, 'siteSearch').toLowerCase(); const warning = $('.anatomy-warning', entry); warning.hidden = true; if (!member || !site) return;
   const organs = (member.organs || '').toLowerCase(); const ovarian = site.includes('ovario') || site.includes('trompa'); const prostate = site.includes('próstata') || site.includes('prostata');
   const concern = (ovarian && member.sex === 'masculino' && !/ovari|útero|utero|órgano reproductor|organo reproductor/.test(organs)) || (prostate && member.sex === 'femenino' && !/próstata|prostata/.test(organs));
   warning.hidden = !concern; if (concern) warning.textContent = 'La localización no coincide con la anatomía registrada. Revise sexo asignado, órganos presentes y antecedentes quirúrgicos; no se ha bloqueado el registro.';
@@ -154,7 +159,15 @@ function validateStep(step) {
   saveRepeatEntries(); const member = activeMember();
   const birth = Number(member.birthYear), death = Number(member.deathYear); if (birth && (birth < 1900 || birth > currentYear) || death && (death < 1900 || death > currentYear)) { $('#save-status').textContent = `Los años deben estar entre 1900 y ${currentYear}.`; return false; }
   if (birth && death && death < birth) { $('#save-status').textContent = 'La defunción no puede ser anterior al nacimiento.'; return false; }
-  if (step === 3 && member.tumors.some(t => t.diagnosisDate && (t.diagnosisDate < `${birth || 1900}-01-01` || t.diagnosisDate > `${death || currentYear}-12-31`))) { $('#save-status').textContent = 'Revisa las fechas de diagnóstico: deben ser compatibles con el familiar.'; return false; }
+  if (step === 3 || step === 8) {
+    const members = step === 8 ? state.members : [member];
+    for (const relative of members) {
+      for (const tumor of relative.tumors) {
+        const error = diagnosisError(relative, tumor, today());
+        if (error) { $('#save-status').textContent = `Familiar ${relative.id}: ${error}`; return false; }
+      }
+    }
+  }
   return true;
 }
 function collectData() {
