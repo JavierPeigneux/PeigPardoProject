@@ -37,7 +37,7 @@ El diagnóstico se introduce solo como año (AAAA). El JSON guarda `diagnosisYea
 
 ## Importar una historia
 
-En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0 y 0.3.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos incorrectos no modifican la historia. El archivo se procesa en el navegador.
+En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0 y 0.3.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos con estructura incompatible no modifican la historia; los valores incorrectos se importan para corregirlos. El archivo se procesa en el navegador.
 
 Los años de nacimiento de hijos y progenitores vinculados se comprueban en ambos sentidos, también al importar y antes de guardar. Con solo el año no se puede determinar la edad exacta dentro de ese año.
 
@@ -47,4 +47,24 @@ Pruebas adicionales con JavaScriptCore:
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc json-import.js tests/json-import.js
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc family-age-validation.js tests/family-age-validation.js
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc diagnosis-validation.js tests/diagnosis-validation.js
+```
+
+## Listado de genes HGNC
+
+El campo Gen es opcional y permite buscar por símbolo o nombre en el catálogo local de símbolos aprobados de HGNC. Se guarda el símbolo oficial. Los valores ajenos al catálogo se señalan para corregirlos antes de guardar. Al importar se conservan los símbolos antiguos no reconocidos para revisarlos, y se normalizan las mayúsculas de los reconocidos.
+
+Fuente: [descarga oficial de HGNC](https://www.genenames.org/download/). La fecha, el número de símbolos y la huella del archivo original están en `hgnc-source.json`. El catálogo se distribuye con el formulario y la búsqueda se realiza en el navegador. Para actualizarlo, ejecuta `python3 scripts/update-hgnc.py`.
+
+```bash
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc hgnc-catalog.js gene-selection.js tests/gene-selection.js
+```
+
+## Corregir datos importados
+
+La importación admite años, edades, fechas y opciones que necesiten revisión, conservando su valor original para editarlos. Las fechas de diagnóstico antiguas válidas se convierten al año; las incorrectas se mantienen visibles para corregirlas. Se rechazan JSON ilegibles, estructuras incompatibles y familiares con IDs duplicados o no admitidos.
+
+Puedes cambiar de familiar, moverte por cualquier pestaña y usar Anterior/Continuar aunque haya errores. Cada campo incorrecto aparece marcado con su explicación. El listado de incidencias permite saltar directamente al familiar y al campo correspondiente. Las marcas se actualizan al editar. Solo se bloquea Guardar JSON mientras queden errores.
+
+```bash
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc hgnc-catalog.js gene-selection.js diagnosis-validation.js json-import.js history-validation.js tests/history-correction.js
 ```

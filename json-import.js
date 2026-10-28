@@ -28,14 +28,11 @@ function parseFamilyImport(text, makeMember) {
     const m = makeMember(Number(id));
     const assign = (source, mapping) => Object.entries(mapping).forEach(([target, key]) => { m[target] = scalar(source[key], m[target]); });
     assign(raw, { alias: 'alias_referencia', relationship: 'parentesco', line: 'linea_familiar', fatherId: 'padre_id', motherId: 'madre_id' });
-    if (m.fatherId === id || m.motherId === id) throw new Error(`El familiar ${id} no puede ser su propio progenitor.`);
+
     const demo = raw.demografia == null ? {} : object(raw.demografia, 'Demografía');
     assign(demo, { sex: 'sexo_asignado_codigo', gender: 'identidad_genero_codigo', vitalStatus: 'estado_vital_codigo', deathCause: 'causa_defuncion_codigo', organs: 'organos_presentes' });
     m.birthYear = demo.nacimiento == null ? '' : scalar(object(demo.nacimiento, 'Nacimiento').year);
     m.deathYear = demo.defuncion == null ? '' : scalar(object(demo.defuncion, 'Defunción').year);
-    for (const year of [m.birthYear, m.deathYear]) {
-      if (year && !/^\d{4}$/.test(year)) throw new Error('Los años de nacimiento y defunción deben tener cuatro cifras.');
-    }
     for (const [section, mapping] of Object.entries({
       fenotipo: { phenotype: 'descripcion', skinFindings: 'estigmas_cutaneos_codigo', benignFindings: 'lesiones_benignas_codigo' },
       profilaxis: { prophylaxis: 'procedimientos', chemoprevention: 'quimioprevencion' },
@@ -47,13 +44,11 @@ function parseFamilyImport(text, makeMember) {
       if (!year && t.diagnosisDate) {
         const date = scalar(t.diagnosisDate);
         const parsed = new Date(`${date}T00:00:00Z`);
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) throw new Error('Hay una fecha de diagnóstico antigua no válida.');
-        year = date.slice(0, 4);
+        const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
+        year = valid ? date.slice(0, 4) : date;
       }
-      if (year && !/^\d{4}$/.test(year)) throw new Error('El año de diagnóstico debe tener cuatro cifras.');
       const tumor = { diagnosisYear: year };
       for (const key of ['site', 'ageAtDiagnosis', 'nature', 'laterality', 'verification', 'organCheck']) tumor[key] = scalar(t[key]);
-      if (tumor.ageAtDiagnosis && !/^\d+$/.test(tumor.ageAtDiagnosis)) throw new Error('La edad al diagnóstico debe ser un número entero no negativo.');
       return tumor;
     });
     m.genetics = list(raw.genetica, 'Genética').map(g => {
@@ -64,10 +59,5 @@ function parseFamilyImport(text, makeMember) {
     });
     return m;
   });
-  if (family.fecha_visita) {
-    const date = scalar(family.fecha_visita);
-    const parsed = new Date(`${date}T00:00:00Z`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) throw new Error('La fecha de visita no es válida.');
-  }
   return { members, familyCode: scalar(family.codigo), visitDate: scalar(family.fecha_visita), consent: scalar(family.consentimiento_codigo, 'desconocido'), notes: scalar(family.notas) };
 }

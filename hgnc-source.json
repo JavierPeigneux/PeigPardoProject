@@ -1,0 +1,7 @@
+{
+  "source": "https://storage.googleapis.com/public-download-files/hgnc/json/json/hgnc_complete_set.json",
+  "reference": "https://www.genenames.org/download/",
+  "retrieved_at": "2026-10-28T10:50:45.975666+00:00",
+  "source_sha256": "5145798bbd42fa0aa71013ab1609ee82f89d897cd94bcc4780fcb4d8ca76c3aa",
+  "approved_symbols": 45289
+}

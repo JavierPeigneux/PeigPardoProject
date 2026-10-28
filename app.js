@@ -41,17 +41,17 @@ function siteFor(value) { return CIEO3_SITES.find(([code, label]) => value === `
 function siteLabel(value) { const match = siteFor(value); return match ? `${match[0]} · ${match[1]}` : value || ''; }
 
 function populateCatalog() {
-  $$('datalist').forEach(list => { list.innerHTML = CIEO3_SITES.map(([code, label]) => `<option value="${code} · ${label}"></option>`).join(''); });
+  $$('datalist:not(.gene-options)').forEach(list => { list.innerHTML = CIEO3_SITES.map(([code, label]) => `<option value="${code} · ${label}"></option>`).join(''); });
 }
 function fillCatalog(root) {
-  $$('datalist', root).forEach(list => { list.innerHTML = CIEO3_SITES.map(([code, label]) => `<option value="${code} · ${label}"></option>`).join(''); });
+  $$('datalist:not(.gene-options)', root).forEach(list => { list.innerHTML = CIEO3_SITES.map(([code, label]) => `<option value="${code} · ${label}"></option>`).join(''); });
 }
 
 function bindMemberFields() {
-  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; if (['fatherId', 'motherId'].includes(field.dataset.memberField)) setManualParent(member, field.dataset.memberField); if (['relationship', 'fatherId', 'motherId'].includes(field.dataset.memberField)) { synchronizeFamilyLinks(state.members); refreshParentFields(); } refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); if (['birthYear', 'deathYear', 'vitalStatus'].includes(field.dataset.memberField)) $$('.tumor-entry').forEach(validateTumorDates); updateFamilyAgeFields(); }));
-  $('#family-code').addEventListener('input', () => { state.familyCode = $('#family-code').value; $('#patient-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); });
-  $('#visit-date').addEventListener('change', () => { state.visitDate = $('#visit-date').value; });
-  $('#consent').addEventListener('change', () => { state.consent = $('#consent').value; });
+  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; if (['fatherId', 'motherId'].includes(field.dataset.memberField)) setManualParent(member, field.dataset.memberField); if (['relationship', 'fatherId', 'motherId'].includes(field.dataset.memberField)) { synchronizeFamilyLinks(state.members); refreshParentFields(); } refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); if (['birthYear', 'deathYear', 'vitalStatus'].includes(field.dataset.memberField)) $$('.tumor-entry').forEach(validateTumorDates); updateFamilyAgeFields(); refreshFormValidation(); }));
+  $('#family-code').addEventListener('input', () => { state.familyCode = $('#family-code').value; $('#patient-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); refreshFormValidation(); });
+  $('#visit-date').addEventListener('change', () => { state.visitDate = $('#visit-date').value; refreshFormValidation(); });
+  $('#consent').addEventListener('change', () => { state.consent = $('#consent').value; refreshFormValidation(); });
   $('#family-notes').addEventListener('input', () => { state.notes = $('#family-notes').value; });
 }
 
@@ -61,7 +61,7 @@ function ensurePatientCodeField() {
   wrapper.className = 'hint patient-code-hint';
   wrapper.innerHTML = '<label class="field"><span>Código del paciente / probando</span><input id="patient-code" maxlength="40" placeholder="Ej. ABC123" /><small>Necesario para generar automáticamente FAM_codigoPaciente_número.</small></label>';
   cta.before(wrapper);
-  $('#patient-code').addEventListener('input', event => { state.familyCode = event.target.value.trim(); $('#family-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); });
+  $('#patient-code').addEventListener('input', event => { state.familyCode = event.target.value.trim(); $('#family-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); refreshFormValidation(); });
 }
 
 function refreshParentFields() {
@@ -74,7 +74,7 @@ function refreshParentFields() {
 
 function loadMemberFields() {
   const member = activeMember();
-  $$('[data-member-field]').forEach(field => { field.value = member ? (member[field.dataset.memberField] ?? '') : ''; });
+  $$('[data-member-field]').forEach(field => { setEditableValue(field, member ? (member[field.dataset.memberField] ?? '') : ''); });
   $('#member-id').value = member ? member.internalId : '';
   updateVitalFields();
   updateFamilyAgeFields();
@@ -125,7 +125,7 @@ function switchMember(id) { if ([3, 5].includes(state.currentStep)) saveRepeatEn
 function fieldValue(entry, key) { return $(`[data-field="${key}"]`, entry)?.value.trim() || ''; }
 function repeatData(entry, type) {
   if (type === 'tumor') return { site: siteLabel(fieldValue(entry, 'siteSearch')), diagnosisYear: fieldValue(entry, 'diagnosisYear'), ageAtDiagnosis: fieldValue(entry, 'ageAtDiagnosis'), nature: fieldValue(entry, 'nature'), laterality: fieldValue(entry, 'laterality'), verification: fieldValue(entry, 'verification'), organCheck: fieldValue(entry, 'organCheck') };
-  return { purpose: fieldValue(entry, 'purpose'), result: fieldValue(entry, 'result'), gene: fieldValue(entry, 'gene'), hgvsC: fieldValue(entry, 'hgvsC'), classification: fieldValue(entry, 'classification') };
+  return { purpose: fieldValue(entry, 'purpose'), result: fieldValue(entry, 'result'), gene: approvedGene(fieldValue(entry, 'gene')) || fieldValue(entry, 'gene'), hgvsC: fieldValue(entry, 'hgvsC'), classification: fieldValue(entry, 'classification') };
 }
 function saveRepeatEntries() {
   const member = activeMember(); if (!member) return;
@@ -135,14 +135,15 @@ function saveRepeatEntries() {
 function renderRepeats() {
   const member = activeMember(); if (!member) return;
   $('#tumors-list').innerHTML = ''; $('#genetics-list').innerHTML = '';
-  member.tumors.forEach(item => addRepeat('tumor', item)); member.genetics.forEach(item => addRepeat('genetic', item));
+  member.tumors.forEach(item => addRepeat('tumor', item)); member.genetics.forEach(item => addRepeat('genetic', item)); refreshFormValidation();
 }
 function addRepeat(type, data = {}) {
   const member = activeMember(); if (!member) return;
   const template = $(`#${type}-template`).content.firstElementChild.cloneNode(true); const list = $(`#${type === 'tumor' ? 'tumors' : 'genetics'}-list`);
-  const values = type === 'tumor' ? { siteSearch: data.site || '', diagnosisYear: data.diagnosisYear || '', ageAtDiagnosis: data.ageAtDiagnosis ?? '', nature: data.nature || 'primario_unico', laterality: data.laterality || 'desconocida', verification: data.verification || 'relato_familiar', organCheck: data.organCheck || '' } : { purpose: data.purpose || 'caso_indice', result: data.result || 'positivo', gene: data.gene || '', hgvsC: data.hgvsC || '', classification: data.classification || 'clase_5_patogenica' };
-  Object.entries(values).forEach(([key, value]) => { const field = $(`[data-field="${key}"]`, template); if (field) field.value = value; });
+  const values = type === 'tumor' ? { siteSearch: data.site || '', diagnosisYear: data.diagnosisYear || '', ageAtDiagnosis: data.ageAtDiagnosis ?? '', nature: data.nature ?? 'primario_unico', laterality: data.laterality ?? 'desconocida', verification: data.verification ?? 'relato_familiar', organCheck: data.organCheck || '' } : { purpose: data.purpose ?? 'caso_indice', result: data.result ?? 'positivo', gene: data.gene || '', hgvsC: data.hgvsC || '', classification: data.classification ?? 'clase_5_patogenica' };
+  Object.entries(values).forEach(([key, value]) => { const field = $(`[data-field="${key}"]`, template); if (field) setEditableValue(field, value); });
   fillCatalog(template);
+  if (type === 'genetic') bindGeneSelection(template);
   const diagnosisYear = $('[data-field="diagnosisYear"]', template);
   if (diagnosisYear) { diagnosisYear.min = '1900'; diagnosisYear.max = currentYear; }
   $('.remove', template).addEventListener('click', () => { template.remove(); saveRepeatEntries(); updateReview(); });
@@ -170,20 +171,14 @@ function showAnatomyWarning(entry) {
 
 function showStep(step) { state.currentStep = step; $$('.panel').forEach(panel => panel.classList.toggle('active', Number(panel.dataset.panel) === step)); $$('.step').forEach(button => button.classList.toggle('active', Number(button.dataset.step) === step)); $('#previous').disabled = step === 1; $('#next').innerHTML = step === 8 ? 'Guardar JSON <span>↓</span>' : 'Continuar <span>→</span>'; if (step === 8) updateReview(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 function validateStep(step) {
-  $('#save-status').textContent = ''; if (!activeMember()) { $('#save-status').textContent = 'Primero introduce un familiar.'; return false; }
-  saveRepeatEntries(); const member = activeMember();
-  if (step === 2 || step === 8) {
-    const ageError = familyAgeError(state.members, currentYear);
-    if (ageError) { $('#save-status').textContent = ageError; return false; }
-  }
-  if (step === 3 || step === 8) {
-    const members = step === 8 ? state.members : [member];
-    for (const relative of members) {
-      for (const tumor of relative.tumors) {
-        const error = diagnosisError(relative, tumor, today());
-        if (error) { $('#save-status').textContent = `Familiar ${relative.id}: ${error}`; return false; }
-      }
-    }
+  $('#save-status').textContent = '';
+  if (!activeMember()) { $('#save-status').textContent = 'Primero introduce un familiar.'; return false; }
+  saveRepeatEntries();
+  const issues = refreshFormValidation();
+  if (issues.length) {
+    $('#save-status').textContent = `Hay ${issues.length} ${issues.length === 1 ? 'campo' : 'campos'} por revisar. Corrígelos antes de guardar.`;
+    $('#correction-panel').open = true;
+    return false;
   }
   return true;
 }
@@ -207,30 +202,19 @@ function collectData() {
     }))
   };
 }
-function updateReview() { const data = collectData(); $('#summary').innerHTML = `<div><strong>${data.miembros_familia.length}</strong><span>familiares</span></div><div><strong>${data.miembros_familia.reduce((n, m) => n + m.neoplasias.length, 0)}</strong><span>neoplasias</span></div><div><strong>${data.miembros_familia.reduce((n, m) => n + m.genetica.length, 0)}</strong><span>estudios genéticos</span></div>`; $('#json-output').textContent = JSON.stringify(data, null, 2); }
+function updateReview() { const data = collectData(); refreshFormValidation(); $('#summary').innerHTML = `<div><strong>${data.miembros_familia.length}</strong><span>familiares</span></div><div><strong>${data.miembros_familia.reduce((n, m) => n + m.neoplasias.length, 0)}</strong><span>neoplasias</span></div><div><strong>${data.miembros_familia.reduce((n, m) => n + m.genetica.length, 0)}</strong><span>estudios genéticos</span></div>`; $('#json-output').textContent = JSON.stringify(data, null, 2); }
 
 $('#add-relative').addEventListener('click', createMember); $('#new-member').addEventListener('click', createMember); $('#member-switch').addEventListener('change', event => switchMember(event.target.value)); $('#add-tumor').addEventListener('click', () => addRepeat('tumor')); $('#add-genetic').addEventListener('click', () => addRepeat('genetic')); $('#vital-status').addEventListener('change', updateVitalFields);
-$$('.step').forEach(button => button.addEventListener('click', () => { const target = Number(button.dataset.step); if (!button.disabled && (target === 8 || validateStep(state.currentStep))) showStep(target); }));
-$('#next').addEventListener('click', () => { if (state.currentStep < 8) { if (validateStep(state.currentStep)) showStep(state.currentStep + 1); return; } if (!validateStep(8)) return; const data = collectData(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${state.familyCode || 'historia-familiar'}-${today()}.json`; link.click(); URL.revokeObjectURL(link.href); $('#save-status').textContent = 'JSON descargado correctamente.'; });
-$('#previous').addEventListener('click', () => showStep(Math.max(1, state.currentStep - 1)));
+$$('.step').forEach(button => button.addEventListener('click', () => { const target = Number(button.dataset.step); if (!button.disabled) { saveRepeatEntries(); showStep(target); refreshFormValidation(); } }));
+$('#next').addEventListener('click', () => { if (state.currentStep < 8) { if (activeMember()) { saveRepeatEntries(); showStep(state.currentStep + 1); refreshFormValidation(); } else { showStep(8); } return; } if (!validateStep(8)) return; const data = collectData(); const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${state.familyCode || 'historia-familiar'}-${today()}.json`; link.click(); URL.revokeObjectURL(link.href); $('#save-status').textContent = 'JSON descargado correctamente.'; });
+$('#previous').addEventListener('click', () => { saveRepeatEntries(); showStep(Math.max(1, state.currentStep - 1)); refreshFormValidation(); });
 ensurePatientCodeField(); bindMemberFields(); populateCatalog(); refreshMemberChrome();
 
 let pendingImport = null;
 let importReadVersion = 0;
 function checkImportOptions(imported) {
-  const check = (field, value) => {
-    if (field?.tagName === 'SELECT' && ![...field.options].some(option => option.value === value)) throw new Error('El JSON contiene una opción no compatible: ' + value);
-  };
-  check($('#consent'), imported.consent);
   imported.members.forEach(member => {
-    $$('[data-member-field]').forEach(field => check(field, member[field.dataset.memberField]));
-    for (const [type, items] of [['tumor', member.tumors], ['genetic', member.genetics]]) {
-      items.forEach(item => {
-        $$('select[data-field]', $(`#${type}-template`).content).forEach(field => {
-          if (item[field.dataset.field]) check(field, item[field.dataset.field]);
-        });
-      });
-    }
+    member.genetics.forEach(study => { study.gene = approvedGene(study.gene) || study.gene; });
   });
 }
 $('#import-json-file').addEventListener('change', async event => {
@@ -245,7 +229,7 @@ $('#import-json-file').addEventListener('change', async event => {
     if (version !== importReadVersion) return;
     checkImportOptions(imported);
     pendingImport = imported;
-    $('#import-status').textContent = `Historia preparada: ${imported.members.length} familiares. Al importar se sustituye la historia abierta.`;
+    $('#import-status').textContent = `Historia preparada: ${imported.members.length} familiares. Podrás corregir los datos después de importar. Se sustituye la historia abierta.`;
     $('#import-json').disabled = false;
   } catch (error) { if (version === importReadVersion) $('#import-status').textContent = error.message; }
 });
@@ -260,7 +244,7 @@ $('#import-json').addEventListener('click', () => {
     ['fatherId', 'motherId'].forEach(key => setManualParent(member, key));
   });
   $('#family-code').value = state.familyCode; $('#patient-code').value = state.familyCode;
-  $('#visit-date').value = state.visitDate; $('#consent').value = state.consent; $('#family-notes').value = state.notes;
+  setEditableValue($('#visit-date'), state.visitDate); setEditableValue($('#consent'), state.consent); $('#family-notes').value = state.notes;
   $('#tumors-list').replaceChildren(); $('#genetics-list').replaceChildren();
   loadMemberFields(); renderRepeats(); refreshMemberChrome(); showStep(8);
   $('#save-status').textContent = '';
