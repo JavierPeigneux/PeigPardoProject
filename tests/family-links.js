@@ -1,0 +1,43 @@
+// Run with a JavaScript shell: jsc family-links.js tests/family-links.js
+function check(condition, message) { if (!condition) throw new Error(message); }
+function member(id, relationship, fields = {}) { return { id, relationship, fatherId: '', motherId: '', ...fields }; }
+const brother = member('01', 'hermano');
+const sister = member('02', 'hermana');
+const father = member('03', 'padre');
+const mother = member('04', 'madre');
+const members = [brother, sister];
+synchronizeFamilyLinks(members);
+check(!brother.fatherId, 'No inventar padres');
+members.push(father, mother);
+synchronizeFamilyLinks(members);
+check(brother.fatherId === '03' && sister.motherId === '04', 'Padres añadidos después');
+const another = member('05', 'hermano');
+members.push(another);
+synchronizeFamilyLinks(members);
+check(another.fatherId === '03' && another.motherId === '04', 'Hermano añadido después');
+sister.fatherId = '99'; setManualParent(sister, 'fatherId');
+synchronizeFamilyLinks(members);
+check(sister.fatherId === '99' && !brother.fatherId, 'Conservar correcciones y evitar ambigüedad');
+sister.fatherId = ''; setManualParent(sister, 'fatherId');
+synchronizeFamilyLinks(members);
+check(sister.fatherId === '' && brother.fatherId === '03', 'Borrado manual persistente');
+father.relationship = 'otro';
+synchronizeFamilyLinks(members);
+check(!brother.fatherId && !another.fatherId, 'Eliminar enlaces inferidos obsoletos');
+const grandfather = member('06', 'abuelo_materno');
+members.push(grandfather);
+synchronizeFamilyLinks(members);
+check(mother.fatherId === '06', 'Abuelos enlazados a padres');
+const duplicate = member('07', 'madre');
+members.push(duplicate);
+synchronizeFamilyLinks(members);
+check(!brother.motherId, 'Progenitores duplicados ambiguos');
+const customBrother = member('08', 'hermano', { fatherId: '10', motherId: '11' });
+const customSister = member('09', 'hermana');
+synchronizeFamilyLinks([customBrother, customSister]);
+check(customSister.fatherId === '10' && customSister.motherId === '11', 'Compartir padres indicados en otro hermano');
+const cyclicFather = member('10', 'padre', { motherId: '08' });
+customBrother.fatherId = '';
+synchronizeFamilyLinks([customBrother, cyclicFather]);
+check(!customBrother.fatherId, 'No inferir ciclos');
+print('OK: parentescos, orden de creación, correcciones, ambigüedad y ciclos');

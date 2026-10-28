@@ -48,7 +48,7 @@ function fillCatalog(root) {
 }
 
 function bindMemberFields() {
-  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); }));
+  $$('[data-member-field]').forEach(field => field.addEventListener('input', () => { const member = activeMember(); if (!member) return; member[field.dataset.memberField] = field.value; if (['fatherId', 'motherId'].includes(field.dataset.memberField)) setManualParent(member, field.dataset.memberField); if (['relationship', 'fatherId', 'motherId'].includes(field.dataset.memberField)) { synchronizeFamilyLinks(state.members); refreshParentFields(); } refreshMemberChrome(); if (field.dataset.memberField === 'vitalStatus') updateVitalFields(); }));
   $('#family-code').addEventListener('input', () => { state.familyCode = $('#family-code').value; $('#patient-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); });
   $('#visit-date').addEventListener('change', () => { state.visitDate = $('#visit-date').value; });
   $('#consent').addEventListener('change', () => { state.consent = $('#consent').value; });
@@ -62,6 +62,14 @@ function ensurePatientCodeField() {
   wrapper.innerHTML = '<label class="field"><span>Código del paciente / probando</span><input id="patient-code" maxlength="40" placeholder="Ej. ABC123" /><small>Necesario para generar automáticamente FAM_codigoPaciente_número.</small></label>';
   cta.before(wrapper);
   $('#patient-code').addEventListener('input', event => { state.familyCode = event.target.value.trim(); $('#family-code').value = state.familyCode; state.members.forEach(member => { member.internalId = internalId(member); }); refreshMemberChrome(); });
+}
+
+function refreshParentFields() {
+  const member = activeMember();
+  if (!member) return;
+  ['fatherId', 'motherId'].forEach(key => {
+    $(`[data-member-field="${key}"]`).value = member[key];
+  });
 }
 
 function loadMemberFields() {
