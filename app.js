@@ -222,21 +222,37 @@ function checkImportOptions(imported) {
     member.genetics.forEach(study => { study.gene = approvedGene(study.gene) || study.gene; });
   });
 }
-$('#import-json-file').addEventListener('change', async event => {
-  const version = ++importReadVersion;
-  pendingImport = null; $('#import-json').disabled = true;
-  const file = event.target.files[0];
+function resetPendingImport() {
+  pendingImport = null;
+  $('#import-json').disabled = true;
   $('#import-status').textContent = '';
-  if (!file) return;
+  return ++importReadVersion;
+}
+function prepareImportText(text, version) {
+  if (version !== importReadVersion) return;
   try {
-    if (file.size > 5 * 1024 * 1024) throw new Error('El archivo supera el límite de 5 MB.');
-    const imported = parseFamilyImport(await file.text(), defaultMember);
-    if (version !== importReadVersion) return;
+    if (new Blob([text]).size > 5 * 1024 * 1024) throw new Error('El JSON supera el límite de 5 MB.');
+    const imported = parseFamilyImport(text, defaultMember);
     checkImportOptions(imported);
     pendingImport = imported;
     $('#import-status').textContent = `Historia preparada: ${imported.members.length} familiares. Podrás corregir los datos después de importar. Se sustituye la historia abierta.`;
     $('#import-json').disabled = false;
+  } catch (error) { $('#import-status').textContent = error.message; }
+}
+$('#import-json-file').addEventListener('change', async event => {
+  const version = resetPendingImport();
+  $('#import-json-text').value = '';
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    if (file.size > 5 * 1024 * 1024) throw new Error('El archivo supera el límite de 5 MB.');
+    prepareImportText(await file.text(), version);
   } catch (error) { if (version === importReadVersion) $('#import-status').textContent = error.message; }
+});
+$('#import-json-text').addEventListener('input', event => {
+  const version = resetPendingImport();
+  $('#import-json-file').value = '';
+  if (event.target.value.trim()) prepareImportText(event.target.value, version);
 });
 $('#import-json').addEventListener('click', () => {
   if (!pendingImport) return;
@@ -254,5 +270,5 @@ $('#import-json').addEventListener('click', () => {
   loadMemberFields(); renderRepeats(); refreshMemberChrome(); showStep(8);
   $('#save-status').textContent = '';
   $('#import-status').textContent = `Historia importada: ${state.members.length} familiares. Puedes revisar y continuar editando.`;
-  pendingImport = null; $('#import-json').disabled = true; $('#import-json-file').value = '';
+  pendingImport = null; ++importReadVersion; $('#import-json').disabled = true; $('#import-json-file').value = ''; $('#import-json-text').value = '';
 });

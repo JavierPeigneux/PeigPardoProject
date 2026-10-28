@@ -1,6 +1,9 @@
 function parseFamilyImport(text, makeMember) {
   let data;
-  try { data = JSON.parse(text.replace(/^\uFEFF/, '')); } catch { throw new Error('El archivo no contiene un JSON válido.'); }
+  try {
+    const cleaned = text.replace(/^\uFEFF/, '').trim().replace(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i, '$1');
+    data = JSON.parse(cleaned);
+  } catch { throw new Error('El archivo no contiene un JSON válido.'); }
   const object = (value, label) => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${label}: se esperaba un objeto.`);
     return value;

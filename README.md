@@ -37,7 +37,7 @@ El diagnóstico se introduce solo como año (AAAA). El JSON guarda `diagnosisYea
 
 ## Importar una historia
 
-En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0, 0.3.0 y 0.4.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos con estructura incompatible no modifican la historia; los valores incorrectos se importan para corregirlos. El archivo se procesa en el navegador.
+En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo o pega el contenido en **O pega aquí el texto del JSON**, y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0, 0.3.0 y 0.4.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos con estructura incompatible no modifican la historia; los valores incorrectos se importan para corregirlos. El archivo se procesa en el navegador.
 
 Los años de nacimiento de hijos y progenitores vinculados se comprueban en ambos sentidos, también al importar y antes de guardar. Con solo el año no se puede determinar la edad exacta dentro de ese año.
 
@@ -80,3 +80,5 @@ En **Gestión → Curso clínico** se genera un texto de la historia familiar: d
 ```bash
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc advanced-schema.js advanced-fields.js clinical-course.js json-import.js tests/advanced-course.js
 ```
+
+La importación pegada utiliza el mismo lector y las mismas comprobaciones que el archivo. También admite un bloque de código completo delimitado por tres acentos graves, con o sin etiqueta `json`. Un JSON inválido no modifica la historia abierta. Al cambiar entre archivo y texto se descarta la preparación anterior para importar siempre la última fuente seleccionada.
