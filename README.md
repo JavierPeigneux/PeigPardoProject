@@ -19,7 +19,7 @@ Después abre `http://localhost:8080`.
 3. Selecciona la rama `main` y la carpeta `/ (root)`.
 4. GitHub mostrará la URL pública de prueba al completar el despliegue.
 
-No incluyas datos identificables o clínicos reales en un repositorio público. Cada descarga contiene la versión de esquema `0.1.0` y puede validarse después contra el modelo de `modelo_bdd_primera_visita.md`.
+No incluyas datos identificables o clínicos reales en un repositorio público. Cada descarga contiene la versión de esquema `0.3.0` y puede validarse después contra el modelo de `modelo_bdd_primera_visita.md`.
 
 ## Vínculos entre familiares
 
@@ -31,4 +31,20 @@ Pruebas de vínculos con JavaScriptCore en macOS:
 
 ```bash
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc family-links.js tests/family-links.js
+```
+
+El diagnóstico se introduce solo como año (AAAA). El JSON guarda `diagnosisYear` como número o `null` si se desconoce, sin inventar día ni mes. La versión de esquema 0.3.0 sustituye el anterior campo `diagnosisDate`. Se comprueba su compatibilidad con nacimiento, defunción, año actual y edad al diagnóstico.
+
+## Importar una historia
+
+En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0 y 0.3.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos incorrectos no modifican la historia. El archivo se procesa en el navegador.
+
+Los años de nacimiento de hijos y progenitores vinculados se comprueban en ambos sentidos, también al importar y antes de guardar. Con solo el año no se puede determinar la edad exacta dentro de ese año.
+
+Pruebas adicionales con JavaScriptCore:
+
+```bash
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc json-import.js tests/json-import.js
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc family-age-validation.js tests/family-age-validation.js
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc diagnosis-validation.js tests/diagnosis-validation.js
 ```

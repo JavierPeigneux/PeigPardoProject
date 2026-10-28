@@ -1,0 +1,24 @@
+function check(condition, message) { if (!condition) throw new Error(message); }
+const parent = { id: '01', birthYear: '1980', deathYear: '' };
+const child = { id: '02', birthYear: '2000', deathYear: '', fatherId: '01' };
+const mother = { id: '03', birthYear: '1985', deathYear: '' };
+child.motherId = '03';
+const members = [parent, child, mother];
+check(!familyAgeError(members, 2026), 'Familia válida');
+check(familyBirthLimits(child, members, 2026).min === 1985, 'Límite del progenitor más joven');
+check(familyBirthLimits(parent, members, 2026).max === 2000, 'Límite del hijo mayor');
+child.birthYear = '1970';
+check(familyAgeError(members, 2026).includes('padre'), 'Hijo anterior al padre');
+child.birthYear = '1982';
+check(familyAgeError(members, 2026).includes('madre'), 'Hijo anterior a la madre');
+child.birthYear = '1985';
+check(!familyAgeError(members, 2026), 'Mismo año no permite deducir edades exactas');
+parent.birthYear = '2001';
+check(familyAgeError(members, 2026), 'Cambio posterior del progenitor');
+parent.birthYear = ''; child.birthYear = '';
+check(!familyAgeError(members, 2026), 'Fechas desconocidas');
+child.birthYear = '2000.5';
+check(familyAgeError(members, 2026), 'Años enteros');
+child.birthYear = '2000'; child.deathYear = '1990';
+check(familyAgeError(members, 2026), 'Defunción anterior al nacimiento');
+print('OK: edades entre hijos y progenitores, cambios y años desconocidos');
