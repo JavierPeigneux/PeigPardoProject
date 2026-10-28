@@ -19,7 +19,7 @@ Después abre `http://localhost:8080`.
 3. Selecciona la rama `main` y la carpeta `/ (root)`.
 4. GitHub mostrará la URL pública de prueba al completar el despliegue.
 
-No incluyas datos identificables o clínicos reales en un repositorio público. Cada descarga contiene la versión de esquema `0.3.0` y puede validarse después contra el modelo de `modelo_bdd_primera_visita.md`.
+No incluyas datos identificables o clínicos reales en un repositorio público. Cada descarga contiene la versión de esquema `0.4.0` y puede validarse después contra el modelo de `modelo_bdd_primera_visita.md`.
 
 ## Vínculos entre familiares
 
@@ -37,7 +37,7 @@ El diagnóstico se introduce solo como año (AAAA). El JSON guarda `diagnosisYea
 
 ## Importar una historia
 
-En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0 y 0.3.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos con estructura incompatible no modifican la historia; los valores incorrectos se importan para corregirlos. El archivo se procesa en el navegador.
+En **Gestión → Importar una historia anterior (JSON)** selecciona el archivo y pulsa **Importar historia**. Gestión está disponible también sin familiares registrados. Se admiten las versiones 0.2.0, 0.3.0 y 0.4.0; los diagnósticos con fecha completa se convierten al año. Se recuperan los familiares, sus vínculos, los datos clínicos y la gestión. Si ya hay una historia abierta, se pide confirmar su sustitución; cancela y descarga su JSON antes si quieres conservarla. Los archivos con estructura incompatible no modifican la historia; los valores incorrectos se importan para corregirlos. El archivo se procesa en el navegador.
 
 Los años de nacimiento de hijos y progenitores vinculados se comprueban en ambos sentidos, también al importar y antes de guardar. Con solo el año no se puede determinar la edad exacta dentro de ese año.
 
@@ -67,4 +67,16 @@ Puedes cambiar de familiar, moverte por cualquier pestaña y usar Anterior/Conti
 
 ```bash
 /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc hgnc-catalog.js gene-selection.js diagnosis-validation.js json-import.js history-validation.js tests/history-correction.js
+```
+
+## Variables de alta especificación y curso clínico
+
+Cada una de las ocho categorías familiares incluye un botón **Variables de alta especificación**. Despliega los campos opcionales de esa categoría. Los detalles de cada neoplasia y estudio genético se despliegan dentro de su propia ficha. Los campos vacíos no se rellenan automáticamente. Las selecciones múltiples admiten varios valores.
+
+El JSON 0.4.0 conserva estas variables bajo `variables_alta_especificacion` en cada familiar, neoplasia y estudio genético. La importación sigue admitiendo 0.2.0 y 0.3.0. Las variables ampliadas se validan con la misma navegación flexible y los enlaces a campos incorrectos; los valores importados no reconocidos permanecen editables. No se ha incorporado el módulo de antecedentes personales del probando.
+
+En **Gestión → Curso clínico** se genera un texto de la historia familiar: datos vitales, parentesco, neoplasias ordenadas por año, genética, fenotipo, prevención, exposiciones y gestión. Incluye solo la información registrada y las variables ampliadas cumplimentadas. Los datos desconocidos no se convierten en negativos y no se generan diagnósticos ni recomendaciones. Si hay errores, se identifica como borrador e incluye las incidencias. Puede copiarse o descargarse como `.txt`; se actualiza al modificar la historia. Los estudios nuevos empiezan con resultado no disponible y sin clasificación, evitando afirmar resultados positivos por defecto.
+
+```bash
+/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc advanced-schema.js advanced-fields.js clinical-course.js json-import.js tests/advanced-course.js
 ```

@@ -1,5 +1,16 @@
 let currentHistoryIssues = [];
 function setEditableValue(field, value) {
+  if (field.tagName === 'SELECT' && field.multiple) {
+    const values = Array.isArray(value) ? value.map(String) : value ? [String(value)] : [];
+    [...field.options].filter(option => option.dataset.importedValue).forEach(option => option.remove());
+    values.forEach(item => {
+      if (![...field.options].some(option => option.value === item)) {
+        const option = document.createElement('option'); option.value = item; option.textContent = `Valor importado: ${item}`; option.dataset.importedValue = 'true'; field.append(option);
+      }
+    });
+    [...field.options].forEach(option => { option.selected = values.includes(option.value); });
+    return;
+  }
   value = String(value ?? '');
   if (field.tagName === 'SELECT') {
     [...field.options].filter(option => option.dataset.importedValue).forEach(option => option.remove());
@@ -33,21 +44,21 @@ function focusHistoryIssue(issue) {
   showStep(issue.step);
   refreshFormValidation();
   const field = issueField(issue);
-  if (field) { field.focus(); field.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+  if (field) { const panel = field.closest('[data-advanced-panel]'); if (panel) { panel.hidden = false; $('.advanced-toggle', panel.parentElement).setAttribute('aria-expanded', 'true'); } field.focus(); field.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
 }
 function issueField(issue) {
   if (!issue.memberId) return $({ consent: '#consent', visitDate: '#visit-date', familyCode: '#family-code' }[issue.key]);
   if (issue.memberId !== state.activeId) return null;
   if (issue.type) {
     const entry = $$(`.${issue.type}-entry`)[issue.index];
-    return entry ? $(`[data-field="${issue.key}"]`, entry) : null;
+    return entry ? $(`[${issue.advanced ? 'data-advanced-key' : 'data-field'}="${issue.key}"]`, entry) : null;
   }
-  return $(`[data-member-field="${issue.key}"]`);
+  return issue.advanced ? $(`.panel > .advanced-section [data-advanced-key="${issue.key}"]`) : $(`[data-member-field="${issue.key}"]`);
 }
 function refreshFormValidation() {
   currentHistoryIssues = historyIssues(state, historyValidationRules(), today(), geneError);
   $$('[data-error-note]').forEach(note => note.remove());
-  $$('[data-member-field], [data-field], #consent, #visit-date, #family-code').forEach(field => {
+  $$('[data-member-field], [data-field], [data-advanced-key], #consent, #visit-date, #family-code').forEach(field => {
     field.setCustomValidity(''); field.removeAttribute('aria-invalid');
     if (field.dataset.errorId) {
       const ids = (field.getAttribute('aria-describedby') || '').split(' ').filter(id => id && !id.startsWith('field-error-'));
@@ -81,6 +92,8 @@ function refreshFormValidation() {
     button.classList.toggle('has-errors', count > 0);
     button.title = count ? `${count} campos por revisar` : '';
   });
+  $$('.advanced-section').forEach(wrap => { const hasErrors = Boolean($('[aria-invalid="true"]', wrap)); $('.advanced-toggle', wrap).classList.toggle('has-errors', hasErrors); });
+  if (typeof refreshClinicalCourse === 'function') refreshClinicalCourse();
   if (!currentHistoryIssues.length && $('#save-status').textContent.startsWith('Hay ')) $('#save-status').textContent = '';
   return currentHistoryIssues;
 }

@@ -16,6 +16,11 @@ function historyIssues(history, rules, now, checkGene) {
   }
   if (history.familyCode.length > 40) add(null, 8, 'familyCode', 'El código admite hasta 40 caracteres.');
   for (const member of history.members) {
+    if (typeof advancedValidationIssues === 'function') issues.push(...advancedValidationIssues(member, 'member', member.advanced, now));
+    if (member.advanced?.malignancyHistory === 'no' && member.tumors.some(tumor => tumor.advanced?.malignancy !== 'no'))
+      issues.push({ memberId: member.id, step: 3, key: 'malignancyHistory', advanced: true, message: 'Se indica ausencia de neoplasia maligna, pero hay neoplasias registradas. Revisa ambos datos.' });
+    if (member.advanced?.previousGeneticStudy === 'no' && member.genetics.some(study => study.gene || study.hgvsC || ['positivo', 'vus', 'negativo_informativo', 'negativo_no_informativo'].includes(study.result)))
+      issues.push({ memberId: member.id, step: 5, key: 'previousGeneticStudy', advanced: true, message: 'Se indica que no hay estudio genético previo, pero hay resultados registrados.' });
     for (const [key, rule] of Object.entries(rules.member)) {
       if (checkOptions(member[key], rule.options)) add(member.id, rule.step, key, 'Selecciona una opción válida; se conserva el valor importado.');
       if (rule.maxLength && String(member[key]).length > rule.maxLength) add(member.id, rule.step, key, `Admite hasta ${rule.maxLength} caracteres.`);
@@ -37,6 +42,7 @@ function historyIssues(history, rules, now, checkGene) {
     }
     for (const [type, items, step] of [['tumor', member.tumors, 3], ['genetic', member.genetics, 5]]) {
       items.forEach((item, index) => {
+        if (typeof advancedValidationIssues === 'function') issues.push(...advancedValidationIssues(member, type, item.advanced, now, index));
         for (const [key, options] of Object.entries(rules[type])) {
           if (checkOptions(item[key], options)) add(member.id, step, key, 'Selecciona una opción válida; se conserva el valor importado.', type, index);
         }

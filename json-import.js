@@ -15,8 +15,13 @@ function parseFamilyImport(text, makeMember) {
     if (!Array.isArray(value)) throw new Error(`${label}: se esperaba una lista.`);
     return value;
   };
+  const advanced = value => {
+    if (value == null) return {};
+    object(value, 'Variables de alta especificación');
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, Array.isArray(item) ? item.map(v => scalar(v)) : scalar(item)]));
+  };
   object(data, 'Historia');
-  if (!['0.2.0', '0.3.0'].includes(data.schema_version)) throw new Error('Versión de JSON no compatible. Se admiten las versiones 0.2.0 y 0.3.0.');
+  if (!['0.2.0', '0.3.0', '0.4.0'].includes(data.schema_version)) throw new Error('Versión de JSON no compatible. Se admiten las versiones 0.2.0, 0.3.0 y 0.4.0.');
   const family = object(data.familia, 'Familia');
   if (!Array.isArray(data.miembros_familia) || data.miembros_familia.length > 99) throw new Error('La historia debe contener una lista de hasta 99 familiares.');
   const ids = new Set();
@@ -26,6 +31,7 @@ function parseFamilyImport(text, makeMember) {
     if (!/^(0[1-9]|[1-9][0-9])$/.test(id) || ids.has(id)) throw new Error('Los IDs de familiares deben ser únicos, entre 01 y 99.');
     ids.add(id);
     const m = makeMember(Number(id));
+    m.advanced = advanced(raw.variables_alta_especificacion);
     const assign = (source, mapping) => Object.entries(mapping).forEach(([target, key]) => { m[target] = scalar(source[key], m[target]); });
     assign(raw, { alias: 'alias_referencia', relationship: 'parentesco', line: 'linea_familiar', fatherId: 'padre_id', motherId: 'madre_id' });
 
@@ -47,13 +53,13 @@ function parseFamilyImport(text, makeMember) {
         const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === date;
         year = valid ? date.slice(0, 4) : date;
       }
-      const tumor = { diagnosisYear: year };
+      const tumor = { diagnosisYear: year, advanced: advanced(t.variables_alta_especificacion) };
       for (const key of ['site', 'ageAtDiagnosis', 'nature', 'laterality', 'verification', 'organCheck']) tumor[key] = scalar(t[key]);
       return tumor;
     });
     m.genetics = list(raw.genetica, 'Genética').map(g => {
       object(g, 'Estudio genético');
-      const study = {};
+      const study = { advanced: advanced(g.variables_alta_especificacion) };
       for (const key of ['purpose', 'result', 'gene', 'hgvsC', 'classification']) study[key] = scalar(g[key]);
       return study;
     });
